@@ -1,11 +1,15 @@
 #!/bin/bash
 
+# Ensure the RDS endpoint is passed or set as an environment variable
+if [ -z "$rds_endpoint" ]; then
+  echo "Error: rds_endpoint is not set. Please export rds_endpoint before running."
+  exit 1
+fi
+
 # Update system and install required packages
 apt-get update -y
 curl -fsSL https://deb.nodesource.com/setup_16.x | bash -
-apt-get install -y nodejs
-apt-get install -y npm
-apt-get install -y mysql-client
+apt-get install -y nodejs npm mysql-client
 
 # Create backend directory
 mkdir -p /opt/backend
@@ -13,10 +17,10 @@ cd /opt/backend
 
 # Create environment variables file
 cat > .env <<EOF
-DB_HOST=${rds_endpoint}
-DB_USER=${db_username}
-DB_PASSWORD=${db_password}
-DB_NAME=${db_name}
+DB_HOST=$rds_endpoint
+DB_USER=admin
+DB_PASSWORD= DB_PASSWORD
+DB_NAME=prjdb
 EOF
 
 # Create app.js with RDS integration
@@ -40,7 +44,6 @@ const dbConfig = {
 // Initialize database connection
 async function initializeDatabase() {
     try {
-        // First connect without database to create it if needed
         const adminConnection = await mysql.createConnection({
             host: dbConfig.host,
             user: dbConfig.user,
@@ -48,10 +51,9 @@ async function initializeDatabase() {
         });
 
         // Create database if it doesn't exist
-        await adminConnection.query(`CREATE DATABASE IF NOT EXISTS \`$${process.env.DB_NAME}\`;`);
+        await adminConnection.query(`CREATE DATABASE IF NOT EXISTS \`${process.env.DB_NAME}\`;`);
         await adminConnection.end();
 
-        // Now connect to the specific database
         const connection = await mysql.createConnection(dbConfig);
 
         // Create table if it doesn't exist
@@ -72,58 +74,46 @@ async function initializeDatabase() {
 }
 
 // Middleware
-app.use(
-  cors({
-    origin: "*",
-    methods: ["GET", "POST"],
-  })
-);
+app.use(cors({ origin: "*", methods: ["GET", "POST"] }));
 app.use(express.json());
 
-// Initialize database connection when starting the app
 let dbConnection;
-initializeDatabase().then(connection => {
-    dbConnection = connection;
+initializeDatabase().then(conn => {
+    dbConnection = conn;
 }).catch(err => {
     console.error('Failed to initialize database:', err);
     process.exit(1);
 });
 
-// Get current counter value and increment it
 app.get("/api/increment", async (req, res) => {
     if (!dbConnection) {
         return res.status(500).json({ error: "Database not connected" });
     }
 
     try {
-        const counterId = 'main_counter'; // You can make this dynamic if needed
-        
-        // First ensure the counter exists
+        const counterId = 'main_counter';
         const [rows] = await dbConnection.query(
             'SELECT value FROM counters WHERE id = ?',
             [counterId]
         );
-        
+
         if (rows.length === 0) {
-            // If counter doesn't exist, initialize it with 0
             await dbConnection.query(
                 'INSERT INTO counters (id, value) VALUES (?, ?)',
                 [counterId, 0]
             );
         }
-        
-        // Increment the counter
+
         await dbConnection.query(
             'UPDATE counters SET value = value + 1 WHERE id = ?',
             [counterId]
         );
-        
-        // Get the new value
+
         const [updatedRows] = await dbConnection.query(
             'SELECT value FROM counters WHERE id = ?',
             [counterId]
         );
-        
+
         res.json({ counter: updatedRows[0].value });
     } catch (error) {
         console.error('Error incrementing counter:', error);
@@ -131,33 +121,25 @@ app.get("/api/increment", async (req, res) => {
     }
 });
 
-// Health check endpoint
 app.get("/api/health", (req, res) => {
     res.json({ status: "healthy" });
 });
 
-// Start the server
 app.listen(port, "0.0.0.0", () => {
-    console.log(`Backend API listening at http://0.0.0.0:3000`);
+    console.log(`Backend API listening at http://0.0.0.0:${port}`);
 });
 
-// Graceful shutdown
 process.on('SIGTERM', async () => {
-    if (dbConnection) {
-        await dbConnection.end();
-    }
+    if (dbConnection) await dbConnection.end();
     process.exit(0);
 });
-
 process.on('SIGINT', async () => {
-    if (dbConnection) {
-        await dbConnection.end();
-    }
+    if (dbConnection) await dbConnection.end();
     process.exit(0);
 });
 EOF
 
-# Create package.json with start script
+# Create package.json with dependencies
 cat > package.json <<'EOF'
 {
   "name": "backend",
