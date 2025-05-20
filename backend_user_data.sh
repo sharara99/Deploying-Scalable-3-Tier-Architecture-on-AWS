@@ -1,10 +1,5 @@
 #!/bin/bash
 
-# Ensure the RDS endpoint is passed or set as an environment variable
-if [ -z "$rds_endpoint" ]; then
-  echo "Error: rds_endpoint is not set. Please export rds_endpoint before running."
-  exit 1
-fi
 
 # Update system and install required packages
 apt-get update -y
