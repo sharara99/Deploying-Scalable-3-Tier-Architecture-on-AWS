@@ -154,8 +154,8 @@ You can easily tailor this infrastructure to suit different applications by:
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-user/3-tier-app-aws-ASG.git
-cd 3-tier-app-aws-ASG
+git clone https://github.com/sharara99/Deploying-Scalable-3-Tier-Architecture-on-AWS.git
+cd Deploying-Scalable-3-Tier-Architecture-on-AWS
 ```
 
 ### 2. Initialize and Validate
