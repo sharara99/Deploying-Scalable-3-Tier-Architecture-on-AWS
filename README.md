@@ -45,22 +45,6 @@ This solution can serve as a production-ready base infrastructure for hosting an
 - [License](#license)
 
 ---
-
-## 🧩 Solution Overview
-
-This Terraform-based project deploys a production-ready **3-tier architecture** designed for web applications. It separates application concerns across:
-- **Frontend Layer**: Serves static and dynamic content to end users.
-- **Backend Layer**: Handles business logic and API endpoints.
-- **Database Layer**: Manages persistent storage using RDS.
-
-Key Features:
-- Highly Available across multiple Availability Zones
-- Automatically Scalable using AWS Auto Scaling Groups
-- Modular Design using Terraform modules for reusability
-- Monitoring with CloudWatch and log collection
-- Fast Global Content Delivery via CloudFront
-
----
 ## 🖼 Architecture Diagram
 
 The 3-Tier architecture consists of the following components:
